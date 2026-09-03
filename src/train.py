@@ -45,7 +45,8 @@ def train(args, model, device, train_data, dev_data, test_data, processor):
         scheduler = AdafactorSchedule(optimizer)
     elif args.optimizer_name == 'adam':
         print('Use AdamW Optimizer for Training.')
-        from transformers.optimization import AdamW, get_linear_schedule_with_warmup
+        from transformers.optimization import get_linear_schedule_with_warmup
+        from torch.optim import AdamW
         if args.model == 'MV_CLIP':
             clip_params = list(map(id, model.model.parameters()))
             base_params = filter(lambda p: id(p) not in clip_params, model.parameters())
@@ -89,7 +90,7 @@ def train(args, model, device, train_data, dev_data, test_data, processor):
                 scheduler.step() 
             optimizer.zero_grad()
 
-        wandb.log({'train_loss': sum_loss/sum_step})
+        wandb.log({'train_loss': sum_loss/max(sum_step, 1)})
         dev_acc, dev_f1 ,dev_precision,dev_recall = evaluate_acc_f1(args, model, device, dev_data, processor, mode='dev')
         wandb.log({'dev_acc': dev_acc, 'dev_f1': dev_f1, 'dev_precision': dev_precision, 'dev_recall': dev_recall})
         logging.info("i_epoch is {}, dev_acc is {}, dev_f1 is {}, dev_precision is {}, dev_recall is {}".format(i_epoch, dev_acc, dev_f1, dev_precision, dev_recall))
@@ -103,6 +104,11 @@ def train(args, model, device, train_data, dev_data, test_data, processor):
             model_to_save = (model.module if hasattr(model, "module") else model)
             torch.save(model_to_save.state_dict(), os.path.join(path_to_save, 'model.pt'))
 
+            try: 
+                torch.save(model_to_save, os.path.join(path_to_save, 'model_f.pt'))
+            except:
+                pass
+
             test_acc, test_f1,test_precision,test_recall = evaluate_acc_f1(args, model, device, test_data, processor,macro = True, mode='test')
             _, test_f1_,test_precision_,test_recall_ = evaluate_acc_f1(args, model, device, test_data, processor, mode='test')
             wandb.log({'test_acc': test_acc, 'macro_test_f1': test_f1,
@@ -111,6 +117,11 @@ def train(args, model, device, train_data, dev_data, test_data, processor):
             logging.info("i_epoch is {}, test_acc is {}, macro_test_f1 is {}, macro_test_precision is {}, macro_test_recall is {}, micro_test_f1 is {}, micro_test_precision is {}, micro_test_recall is {}".format(i_epoch, test_acc, test_f1, test_precision, test_recall, test_f1_, test_precision_, test_recall_))
 
         torch.cuda.empty_cache()
+
+    try: 
+        torch.save(model_to_save, os.path.join(path_to_save, 'model_f.pt'))
+    except:
+        pass
     logger.info('Train done')
 
 
@@ -146,9 +157,9 @@ def evaluate_acc_f1(args, model, device, data, processor, macro=False,pre = None
                     t_targets_all = torch.cat((t_targets_all, t_targets), dim=0)
                     t_outputs_all = torch.cat((t_outputs_all, outputs), dim=0)
         if mode == 'test':
-            wandb.log({'test_loss': sum_loss/sum_step})
+            wandb.log({'test_loss': sum_loss/max(sum_step, 1)})
         else:
-            wandb.log({'dev_loss': sum_loss/sum_step})
+            wandb.log({'dev_loss': sum_loss/max(sum_step, 1)})
         if pre != None:
             with open(pre,'w',encoding='utf-8') as fout:
                 predict = t_outputs_all.cpu().numpy().tolist()

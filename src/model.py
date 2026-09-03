@@ -15,13 +15,13 @@ class MultimodalEncoder(nn.Module):
         all_encoder_layers = []
         all_encoder_attentions = []
         for layer_module in self.layer:
-            hidden_states, attention = layer_module(hidden_states, attention_mask, output_attentions=True)
-            all_encoder_attentions.append(attention)
+            hidden_states = layer_module(hidden_states, attention_mask, output_attentions=True)
+
             if output_all_encoded_layers:
                 all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
-        return all_encoder_layers, all_encoder_attentions
+        return all_encoder_layers
 
 
 class MV_CLIP(nn.Module):
@@ -70,7 +70,7 @@ class MV_CLIP(nn.Module):
         extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
         extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-        fuse_hiddens, all_attentions = self.trans(input_embeds, extended_attention_mask, output_all_encoded_layers=False)
+        fuse_hiddens = self.trans(input_embeds, extended_attention_mask, output_all_encoded_layers=False)
         fuse_hiddens = fuse_hiddens[-1]
         new_text_features = fuse_hiddens[:, 50:, :]
         new_text_feature = new_text_features[

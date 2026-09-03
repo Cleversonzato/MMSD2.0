@@ -64,9 +64,9 @@ def main():
         project="MMSD2.0",
         notes="mm",
         tags=["mm"],
-        config=vars(args),
+        mode="offline"
     )
-    wandb.watch_called = False  
+    wandb.watch_called = False 
 
     train_data = MyDataset(mode='train', text_name=args.text_name, limit=None)
     dev_data = MyDataset(mode='valid', text_name=args.text_name, limit=None)
