@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def train(args, model, device, train_data, dev_data, test_data, processor):
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-
+    print("start!")
     train_loader = DataLoader(dataset=train_data,
                               batch_size=args.train_batch_size,
                               collate_fn=MyDataset.collate_func,
@@ -69,7 +69,7 @@ def train(args, model, device, train_data, dev_data, test_data, processor):
     for i_epoch in trange(0, int(args.num_train_epochs), desc="Epoch", disable=False):
         sum_loss = 0.
         sum_step = 0
-
+        print("epoch")
         iter_bar = tqdm(train_loader, desc="Iter (loss=X.XXX)", disable=False)
         model.train()
 
